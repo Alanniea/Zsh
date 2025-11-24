@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
 set -e
 
-ACTION="$1"
+# ================================
+# 🍀 交互菜单
+# ================================
 
-# ============================
-# 0. 函数：卸载 Zsh 最强定制
-# ============================
+menu() {
+    echo "==============================="
+    echo "   🌟 Zsh 最强定制 2025 🌟"
+    echo "==============================="
+    echo "1) 安装 Zsh 最强定制"
+    echo "2) 卸载 Zsh 最强定制"
+    echo "3) 退出"
+    echo -n "请选择 [1-3]: "
+    read choice
+}
+
+# ================================
+# 0. 卸载函数
+# ================================
 
 uninstall() {
     echo "🚨 开始卸载 Zsh 最强定制..."
@@ -17,43 +30,33 @@ uninstall() {
     fi
 
     # 删除 zinit
-    if [[ -d ~/.zinit ]]; then
-        echo "🗑 删除 zinit..."
-        rm -rf ~/.zinit
-    fi
+    [[ -d ~/.zinit ]] && { echo "🗑 删除 zinit..."; rm -rf ~/.zinit; }
 
-    # 删除 p10k 配置
-    [[ -f ~/.p10k.zsh ]] && rm -f ~/.p10k.zsh
+    # 删除 p10k
+    [[ -f ~/.p10k.zsh ]] && { echo "🗑 删除 p10k..."; rm -f ~/.p10k.zsh; }
 
-    # 删除当前 zshrc，但保留用户备份
+    # 删除当前 zshrc
     if [[ -f ~/.zshrc ]]; then
-        echo "📁 删除当前 .zshrc"
+        echo "🗑 删除当前 ~/.zshrc"
         rm -f ~/.zshrc
     fi
 
-    # 恢复旧 zshrc
+    # 恢复备份
     if [[ -f ~/.zshrc.bak ]]; then
-        echo "♻️ 恢复你的旧 zshrc"
+        echo "♻️ 恢复 ~/.zshrc.bak → ~/.zshrc"
         mv ~/.zshrc.bak ~/.zshrc
     fi
 
-    echo "✅ 卸载完成！请重新打开终端。"
+    echo "✅ 卸载完成！"
     exit 0
 }
 
-# 如果用户输入 uninstall → 执行卸载
-if [[ "$ACTION" == "uninstall" ]]; then
-    uninstall
-fi
-
-
-# ============================
+# ================================
 # 1. 安装依赖
-# ============================
-
-echo "🚀 开始安装《Zsh 最强定制 2025》……"
+# ================================
 
 install_packages() {
+    echo "📦 开始安装依赖..."
     if command -v apt >/dev/null 2>&1; then
         sudo apt update
         sudo apt install -y zsh git curl wget fzf fonts-powerline bat || true
@@ -73,40 +76,32 @@ install_packages() {
         pkg install -y zsh git curl fzf bat eza
 
     else
-        echo "❌ 无法识别包管理器，请手动安装：zsh git curl fzf bat eza"
+        echo "❌ 无法识别包管理器，请手动安装 zsh/git/curl/fzf/bat/eza"
         exit 1
     fi
 }
 
-install_packages
+# ================================
+# 2. 安装函数
+# ================================
 
+install_zsh() {
+    echo "🚀 安装 Zsh 最强定制 2025..."
 
-# ============================
-# 2. 安装 zinit
-# ============================
+    install_packages
 
-echo "⚡ 安装 zinit..."
-if [[ ! -f ~/.zinit/bin/zinit.zsh ]]; then
-    mkdir -p ~/.zinit
-    git clone https://github.com/zdharma-continuum/zinit.git ~/.zinit/bin
-fi
+    echo "⚡ 安装 zinit..."
+    if [[ ! -f ~/.zinit/bin/zinit.zsh ]]; then
+        mkdir -p ~/.zinit
+        git clone https://github.com/zdharma-continuum/zinit.git ~/.zinit/bin
+    fi
 
+    if [[ -f ~/.zshrc ]]; then
+        echo "📦 备份现有 ~/.zshrc → ~/.zshrc.bak"
+        mv ~/.zshrc ~/.zshrc.bak
+    fi
 
-# ============================
-# 3. 备份旧配置
-# ============================
-
-if [[ -f ~/.zshrc ]]; then
-    echo "📦 备份现有 ~/.zshrc → ~/.zshrc.bak"
-    mv ~/.zshrc ~/.zshrc.bak
-fi
-
-
-# ============================
-# 4. 写入最强 zshrc
-# ============================
-
-echo "📝 写入新的 .zshrc"
+    echo "📝 写入新的 ~/.zshrc"
 
 cat > ~/.zshrc << 'EOF'
 # =============================
@@ -171,16 +166,25 @@ setopt pushd_ignore_dups
 setopt interactivecomments
 EOF
 
+    if command -v chsh >/dev/null 2>&1; then
+        echo "🔧 设置默认 shell 为 zsh..."
+        chsh -s "$(command -v zsh)" || true
+    fi
 
-# ============================
-# 5. 设置默认 Shell
-# ============================
+    echo "🎉 安装完成！重新打开终端即可使用最强 Zsh。"
+    exit 0
+}
 
-if command -v chsh >/dev/null 2>&1; then
-    echo "🔧 将 zsh 设为默认 shell..."
-    chsh -s "$(command -v zsh)" || true
-fi
+# ================================
+# 🚀 主逻辑：菜单循环
+# ================================
 
-echo
-echo "🎉 安装完成！重新打开终端即可体验最强 Zsh。"
-echo "💡 卸载命令： bash install.sh uninstall"
+while true; do
+    menu
+    case "$choice" in
+        1) install_zsh ;;
+        2) uninstall ;;
+        3) echo "👋 退出"; exit 0 ;;
+        *) echo "❌ 无效选项，请输入 1~3";;
+    esac
+done
