@@ -87,15 +87,16 @@ EOF
 }
 
 #################################
-# 🔧 自动修复 compinit 权限（彻底版）
+# 🔧 一键修复 compaudit（彻底版）
 #################################
-fix_compinit_permissions() {
-    echo "🔧 修复 compinit 不安全文件权限..."
+fix_compaudit() {
+    echo "🔧 自动修复 compaudit 权限..."
     [[ -f ~/.zshrc ]] && chmod 644 ~/.zshrc
-    # 递归修复 ~/.zinit 所有子目录和文件
+    [[ -f ~/.p10k.zsh ]] && chmod 644 ~/.p10k.zsh
     [[ -d ~/.zinit ]] && chmod -R go-w ~/.zinit
     # 修复其他补全文件
     compaudit | xargs chmod g-w,o-w || true
+    echo "✅ 权限修复完成！"
 }
 
 #################################
@@ -145,7 +146,7 @@ setopt share_history
 EOF
 
     write_p10k
-    fix_compinit_permissions
+    fix_compaudit
 
     # 设置默认 shell
     command -v chsh >/dev/null && chsh -s "$(command -v zsh)" || true
