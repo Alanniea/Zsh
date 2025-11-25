@@ -2,14 +2,14 @@
 set -e
 
 #################################
-# 🌟 Zsh Minimal Neo — Single-line + Command Time + Autopair
+# 🌟 Zsh Minimal Neo — Single-line + Command Time + Autopair + Auto Fix compinit
 #################################
 
 menu() {
     echo "==============================="
     echo "   🌟 Zsh Minimal Neo (Single-line + Command Time + Autopair) 🌟"
     echo "==============================="
-    echo "1) 安装 Zsh 极简未来风（单行 + 命令耗时 + autopair，自动 exec zsh）"
+    echo "1) 安装 Zsh 极简未来风（单行 + 命令耗时 + autopair + auto fix compinit）"
     echo "2) 卸载 Zsh 定制"
     echo "3) 退出"
     echo -n "请选择 [1-3]: "
@@ -36,7 +36,7 @@ uninstall() {
 }
 
 #################################
-# 📦 依赖安装
+# 📦 安装依赖
 #################################
 install_packages() {
     echo "📦 安装依赖..."
@@ -66,7 +66,7 @@ install_packages() {
 }
 
 #################################
-# 🎨 写 Single-line Minimal Neo + Command Time + Autopair
+# 🎨 写 Single-line Minimal Neo + 命令耗时 + autopair
 #################################
 write_p10k() {
     echo "📝 写入 Single-line Minimal Neo ~/.p10k.zsh (Command Time + Autopair)"
@@ -115,7 +115,21 @@ EOF
 }
 
 #################################
-# 🚀 安装主流程
+# 🔧 自动修复 compinit 权限
+#################################
+fix_compinit_permissions() {
+    echo "🔧 修复 compinit 不安全文件权限..."
+
+    # 如果存在 ~/.zshrc 或 ~/.zinit，则修复权限
+    [[ -f ~/.zshrc ]] && chmod 644 ~/.zshrc
+    [[ -d ~/.zinit ]] && chmod -R go-w ~/.zinit
+
+    # 修复其他补全文件
+    compaudit | xargs chmod g-w,o-w || true
+}
+
+#################################
+# 🚀 安装流程
 #################################
 install_zsh() {
     echo "🚀 安装 Minimal Neo（单行 + 命令耗时 + autopair）..."
@@ -165,10 +179,11 @@ setopt share_history
 EOF
 
     write_p10k
+    fix_compinit_permissions
 
     command -v chsh >/dev/null && chsh -s "$(command -v zsh)" || true
 
-    echo "🎉 安装完成！即将自动 exec zsh，进入单行 Minimal Neo + 命令耗时 + autopair 环境。"
+    echo "🎉 安装完成！自动修复 compinit 权限并 exec zsh，进入单行 Minimal Neo + 命令耗时 + autopair 环境。"
     sleep 1
 
     exec zsh
