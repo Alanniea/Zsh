@@ -7,9 +7,9 @@ set -e
 
 menu() {
     echo "==============================="
-    echo "   🌟 Zsh Minimal Neo Installer 🌟"
+    echo "   🌟 Zsh Minimal Neo (Single-line + Command Time + Autopair) 🌟"
     echo "==============================="
-    echo "1) 安装 Zsh 极简未来风（单行 + 命令耗时 + autopair + 自动修复 compinit）"
+    echo "1) 安装 Zsh 极简未来风（单行 + 命令耗时 + autopair + auto fix compinit）"
     echo "2) 卸载 Zsh 定制"
     echo "3) 退出"
     echo -n "请选择 [1-3]: "
@@ -76,9 +76,11 @@ cat > ~/.p10k.zsh <<'EOF'
 # Minimal Neo — Single-line + 命令耗时 + autopair
 # ===============================
 
+# instant prompt
 [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]] && \
 source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 
+# 单行布局
 POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs)
 POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(command_execution_time)
 
@@ -88,20 +90,25 @@ POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
 POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX=""
 POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX=""
 
+# 目录显示
 POWERLEVEL9K_SHORTEN_DIR_LENGTH=1
 POWERLEVEL9K_SHORTEN_STRATEGY="truncate_middle"
 
+# Git 显示
 POWERLEVEL9K_VCS_GIT_ICON=' '
 POWERLEVEL9K_VCS_SHOW_CHANGED_IN_PAREN=false
 POWERLEVEL9K_VCS_DISABLE_GITSTATUS_FORMATTING=true
 
+# 状态
 POWERLEVEL9K_STATUS_OK=false
 POWERLEVEL9K_STATUS_ERROR=true
 
+# 命令执行耗时阈值
 POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=0.5
 POWERLEVEL9K_COMMAND_EXECUTION_TIME_PRECISION=2
 POWERLEVEL9K_COMMAND_EXECUTION_TIME_BACKGROUND=false
 
+# 极简间距
 POWERLEVEL9K_ICON_PADDING=none
 POWERLEVEL9K_PROMPT_ADD_NEWLINE=false
 EOF
@@ -121,7 +128,7 @@ fix_compinit_permissions() {
 # 🚀 安装流程
 #################################
 install_zsh() {
-    echo "🚀 安装 Minimal Neo（单行 + 命令耗时 + autopair）..."
+    echo "🚀 安装 Minimal Neo（单行 + 命令耗时 + autopair + auto fix compinit）..."
 
     install_packages
 
@@ -139,20 +146,24 @@ cat > ~/.zshrc <<'EOF'
 export ZSH_DISABLE_COMPFIX=true
 export TERM=xterm-256color
 
+# zinit 管理器
 source ~/.zinit/bin/zinit.zsh
 
+# powerlevel10k
 zinit depth"1" light-mode for romkatv/powerlevel10k
 
+# 加载 single-line + 命令耗时 p10k
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # 插件
 zinit light zsh-users/zsh-autosuggestions
 zinit light zdharma-continuum/fast-syntax-highlighting
 zinit light zsh-users/zsh-history-substring-search
-zinit light hlissner/zsh-autopair
+zinit light hlissner/zsh-autopair   # 自动括号配对
 zinit light Aloxaf/fzf-tab
 bindkey '^I' fzf-tab-complete
 
+# 别名
 alias ll='eza -lah --icons'
 alias la='eza -a --icons'
 alias cat='bat --style=plain'
@@ -168,7 +179,7 @@ EOF
 
     command -v chsh >/dev/null && chsh -s "$(command -v zsh)" || true
 
-    echo "🎉 安装完成！自动修复 compinit 权限并 exec zsh，进入单行 Minimal Neo + 命令耗时 + autopair 环境。"
+    echo "🎉 安装完成！已自动修复 compinit 权限并 exec zsh，进入单行 Minimal Neo + 命令耗时 + autopair 环境。"
     sleep 1
 
     exec zsh
