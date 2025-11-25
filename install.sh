@@ -2,14 +2,14 @@
 set -e
 
 #################################
-# 🌟 Zsh Minimal Neo — Single-line
+# 🌟 Zsh Minimal Neo — Single-line + 命令耗时
 #################################
 
 menu() {
     echo "==============================="
-    echo "   🌟 Zsh Minimal Neo (Single-line) 🌟"
+    echo "   🌟 Zsh Minimal Neo (Single-line, Command Time) 🌟"
     echo "==============================="
-    echo "1) 安装 Zsh 极简未来风（单行模式，自动 exec zsh）"
+    echo "1) 安装 Zsh 极简未来风（单行 + 命令耗时，自动 exec zsh）"
     echo "2) 卸载 Zsh 定制"
     echo "3) 退出"
     echo -n "请选择 [1-3]: "
@@ -66,29 +66,29 @@ install_packages() {
 }
 
 #################################
-# 🎨 写 Single-line Minimal Neo 主题
+# 🎨 写 Single-line Minimal Neo + Command Time
 #################################
 write_p10k() {
-    echo "📝 写入 Single-line Minimal Neo ~/.p10k.zsh"
+    echo "📝 写入 Single-line Minimal Neo ~/.p10k.zsh (Command Time)"
 
 cat > ~/.p10k.zsh <<'EOF'
 # ===============================
-#   Minimal Neo — Single-line 模式
+# Minimal Neo — Single-line + 命令耗时
 # ===============================
 
-# instant prompt 加速
+# instant prompt
 [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]] && \
 source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 
-# 单行布局：左 → dir vcs ; 右 → status time
+# 单行布局
 POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs)
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status time)
+# 右侧显示命令耗时
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(command_execution_time)
 
-# 关键：单行，不换行显示 prompt
 POWERLEVEL9K_PROMPT_ON_NEWLINE=false
 POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
 
-# 去掉多行前缀（单行不需要）
+# 去掉多行前缀
 POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX=""
 POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX=""
 
@@ -101,26 +101,26 @@ POWERLEVEL9K_VCS_GIT_ICON=' '
 POWERLEVEL9K_VCS_SHOW_CHANGED_IN_PAREN=false
 POWERLEVEL9K_VCS_DISABLE_GITSTATUS_FORMATTING=true
 
-# 状态（仅显示失败时的红色标记）
+# 状态
 POWERLEVEL9K_STATUS_OK=false
 POWERLEVEL9K_STATUS_ERROR=true
 
-# 时间显示（右侧）
-POWERLEVEL9K_TIME_FORMAT="%D{%H:%M:%S}"
+# 命令执行耗时阈值（仅显示耗时 > 0.5s）
+POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=0.5
+POWERLEVEL9K_COMMAND_EXECUTION_TIME_PRECISION=2
+POWERLEVEL9K_COMMAND_EXECUTION_TIME_BACKGROUND=false
 
 # 极简间距与符号
 POWERLEVEL9K_ICON_PADDING=none
 POWERLEVEL9K_PROMPT_ADD_NEWLINE=false
-
-# 如果想恢复完整向导：运行 p10k configure
 EOF
 }
 
 #################################
-# 🚀 安装主流程（含自动 exec zsh）
+# 🚀 安装主流程（自动 exec zsh）
 #################################
 install_zsh() {
-    echo "🚀 安装 Minimal Neo（单行）..."
+    echo "🚀 安装 Minimal Neo（单行 + 命令耗时）..."
 
     install_packages
 
@@ -130,12 +130,8 @@ install_zsh() {
         git clone https://github.com/zdharma-continuum/zinit.git ~/.zinit/bin
     fi
 
-    # 备份旧 zshrc
     [[ -f ~/.zshrc ]] && mv ~/.zshrc ~/.zshrc.bak
 
-    #################################
-    # 写入极简 ~/.zshrc（单行版）
-    #################################
     echo "📝 写入新的 ~/.zshrc"
 
 cat > ~/.zshrc <<'EOF'
@@ -145,22 +141,22 @@ export TERM=xterm-256color
 # zinit 管理器
 source ~/.zinit/bin/zinit.zsh
 
-# powerlevel10k（via zinit）
+# powerlevel10k
 zinit depth"1" light-mode for romkatv/powerlevel10k
 
-# 加载我们写好的 single-line p10k
+# 加载 single-line + 命令耗时 p10k
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
-# 必要效率插件（轻量）
+# 插件
 zinit light zsh-users/zsh-autosuggestions
 zinit light zdharma-continuum/fast-syntax-highlighting
 zinit light zsh-users/zsh-history-substring-search
 
-# fzf-tab（可选）
+# fzf-tab
 zinit light Aloxaf/fzf-tab
 bindkey '^I' fzf-tab-complete
 
-# 常用别名
+# 别名
 alias ll='eza -lah --icons'
 alias la='eza -a --icons'
 alias cat='bat --style=plain'
@@ -171,29 +167,14 @@ setopt hist_ignore_all_dups
 setopt share_history
 EOF
 
-    # 写入 p10k 单行配置
     write_p10k
 
-    # 尝试设置 zsh 为默认 shell（若支持）
     command -v chsh >/dev/null && chsh -s "$(command -v zsh)" || true
 
-    echo "🎉 安装完成！即将自动 exec zsh，进入单行 Minimal Neo 环境。"
-    echo "（若你有重要子进程请先终止它们）"
+    echo "🎉 安装完成！即将自动 exec zsh，进入单行 Minimal Neo + 命令耗时环境。"
     sleep 1
 
-    # 自动重载为 zsh（替换当前 shell）
-    if command -v zsh >/dev/null 2>&1; then
-        exec zsh
-    fi
-
-    # 若 exec 失败则 fallback 为 source
-    if [[ -f ~/.zshrc ]]; then
-        echo "⚠️ exec zsh 未成功，改为 source ~/.zshrc"
-        # shellcheck disable=SC1090
-        source ~/.zshrc
-    fi
-
-    exit 0
+    exec zsh
 }
 
 #################################
