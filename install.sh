@@ -2,38 +2,40 @@
 set -e
 
 # ================================
-# 🍀 交互菜单
+# 🍀 交互菜单 - 自动 reload 版
 # ================================
 
 menu() {
     echo "==============================="
     echo "   🌟 Zsh 最强定制 2025 🌟"
     echo "==============================="
-    echo "1) 安装 Zsh 最强定制"
+    echo "1) 安装 Zsh 最强定制（安装后自动重载 exec zsh）"
     echo "2) 卸载 Zsh 最强定制"
     echo "3) 退出"
     echo -n "请选择 [1-3]: "
-    read choice
+    read -r choice
 }
 
 # ================================
 # 0. 卸载函数
 # ================================
-
 uninstall() {
     echo "🚨 开始卸载 Zsh 最强定制..."
 
-    # 恢复默认 shell
+    # 恢复默认 shell（若可用）
     if command -v chsh >/dev/null 2>&1; then
         echo "🔧 恢复系统默认 Shell（bash）..."
         chsh -s "$(command -v bash)" || true
     fi
 
     # 删除 zinit
-    [[ -d ~/.zinit ]] && { echo "🗑 删除 zinit..."; rm -rf ~/.zinit; }
+    if [[ -d ~/.zinit ]]; then
+        echo "🗑 删除 zinit..."
+        rm -rf ~/.zinit
+    fi
 
-    # 删除 p10k
-    [[ -f ~/.p10k.zsh ]] && { echo "🗑 删除 p10k..."; rm -f ~/.p10k.zsh; }
+    # 删除 p10k 配置
+    [[ -f ~/.p10k.zsh ]] && { echo "🗑 删除 p10k 配置..."; rm -f ~/.p10k.zsh; }
 
     # 删除当前 zshrc
     if [[ -f ~/.zshrc ]]; then
@@ -54,7 +56,6 @@ uninstall() {
 # ================================
 # 1. 安装依赖
 # ================================
-
 install_packages() {
     echo "📦 开始安装依赖..."
     if command -v apt >/dev/null 2>&1; then
@@ -82,9 +83,8 @@ install_packages() {
 }
 
 # ================================
-# 2. 安装函数
+# 2. 安装函数（安装后会自动 exec zsh）
 # ================================
-
 install_zsh() {
     echo "🚀 安装 Zsh 最强定制 2025..."
 
@@ -171,14 +171,31 @@ EOF
         chsh -s "$(command -v zsh)" || true
     fi
 
-    echo "🎉 安装完成！重新打开终端即可使用最强 Zsh。"
+    echo
+    echo "🎉 安装完成！脚本将自动用 exec zsh 重载为新 shell。"
+    echo "（如果你不希望自动重载，下一次运行脚本请选择退出并手动 source/exec）"
+    echo
+
+    # 自动重载：优先 exec zsh；若 exec 失败则回退为 source
+    if command -v zsh >/dev/null 2>&1; then
+        echo "🔄 正在重载为 zsh（exec zsh）…"
+        exec zsh
+        # exec 成功不会返回；若失败，会继续执行下面的回退
+    fi
+
+    # 回退（极少用到）：当没有 zsh 可执行或 exec 失败时
+    if [[ -f ~/.zshrc ]]; then
+        echo "⚠️ exec zsh 未能替换 shell，改为 source ~/.zshrc"
+        # shellcheck disable=SC1090
+        source ~/.zshrc
+    fi
+
     exit 0
 }
 
 # ================================
 # 🚀 主逻辑：菜单循环
 # ================================
-
 while true; do
     menu
     case "$choice" in
