@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
 set -e
 
-#################################
-# 🌟 Zsh Minimal Neo — Single-line + Command Time + Autopair + Safe compinit
-#################################
-
 menu() {
     echo "==============================="
-    echo "   🌟 Zsh Minimal Neo (Single-line + Command Time + Autopair) 🌟"
+    echo "   🌟 Zsh Minimal Neo（升级不丢历史版）🌟"
     echo "==============================="
-    echo "1) 安装 Zsh 极简未来风（单行 + 命令耗时 + autopair + 安全 compinit）"
-    echo "2) 卸载 Zsh 定制"
+    echo "1) 安装"
+    echo "2) 卸载"
     echo "3) 退出"
-    echo -n "请选择 [1-3]: "
+    echo -n "选择: "
     read -r choice
 }
 
@@ -20,15 +16,11 @@ menu() {
 # 🗑 卸载
 #################################
 uninstall() {
-    echo "🚨 开始卸载 Zsh 定制..."
-    [[ -d ~/.zinit ]] && rm -rf ~/.zinit
-    [[ -f ~/.p10k.zsh ]] && rm -f ~/.p10k.zsh
-    [[ -f ~/.zshrc ]] && rm -f ~/.zshrc
+    echo "🗑 删除定制..."
+    rm -rf ~/.zinit ~/.p10k.zsh
+    [[ -f ~/.zsh_history ]] && chmod 600 ~/.zsh_history
     [[ -f ~/.zshrc.bak ]] && mv ~/.zshrc.bak ~/.zshrc
-    if command -v chsh >/dev/null 2>&1; then
-        chsh -s "$(command -v bash)" || true
-    fi
-    echo "✅ 卸载完成！"
+    echo "✔ 卸载完毕"
     exit 0
 }
 
@@ -37,93 +29,111 @@ uninstall() {
 #################################
 install_packages() {
     echo "📦 安装依赖..."
-    if command -v apt >/dev/null 2>&1; then
+    if command -v apt >/dev/null; then
         sudo apt update
-        sudo apt install -y zsh git curl wget fzf fonts-powerline bat || true
+        sudo apt install -y zsh git curl fzf wget fonts-powerline bat || true
         command -v batcat >/dev/null && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
         sudo apt install -y eza || true
-    elif command -v pacman >/dev/null 2>&1; then
-        sudo pacman -Sy --needed --noconfirm zsh git curl wget fzf eza bat
-    elif command -v dnf >/dev/null 2>&1; then
+    elif command -v pacman >/dev/null; then
+        sudo pacman -Sy --noconfirm zsh git curl wget fzf eza bat
+    elif command -v dnf >/dev/null; then
         sudo dnf install -y zsh git curl wget fzf eza bat
-    elif command -v brew >/dev/null 2>&1; then
+    elif command -v brew >/dev/null; then
         brew install zsh git curl fzf eza bat
-    elif command -v pkg >/dev/null 2>&1; then
+    elif command -v pkg >/dev/null; then
         pkg install -y zsh git curl fzf eza bat
-    else
-        echo "❌ 不支持的包管理器，请手动安装 zsh/git/fzf/bat/eza"
-        exit 1
     fi
 }
 
 #################################
-# 🎨 写 P10K 配置
+# 🎨 写 p10k
 #################################
 write_p10k() {
-    cat > ~/.p10k.zsh <<'EOF'
-# Minimal Neo — 单行 + 命令耗时 + autopair
-[[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]] && \
-source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-
+cat > ~/.p10k.zsh <<'EOF'
 POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs)
 POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(command_execution_time)
 POWERLEVEL9K_PROMPT_ON_NEWLINE=false
 POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
+POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=0.3
+POWERLEVEL9K_COMMAND_EXECUTION_TIME_PRECISION=2
 POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX=""
 POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX=""
 POWERLEVEL9K_SHORTEN_DIR_LENGTH=1
-POWERLEVEL9K_SHORTEN_STRATEGY="truncate_middle"
-POWERLEVEL9K_VCS_GIT_ICON=' '
-POWERLEVEL9K_VCS_SHOW_CHANGED_IN_PAREN=false
-POWERLEVEL9K_VCS_DISABLE_GITSTATUS_FORMATTING=true
-POWERLEVEL9K_STATUS_OK=false
-POWERLEVEL9K_STATUS_ERROR=true
-POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=0.5
-POWERLEVEL9K_COMMAND_EXECUTION_TIME_PRECISION=2
-POWERLEVEL9K_COMMAND_EXECUTION_TIME_BACKGROUND=false
+POWERLEVEL9K_SHORTEN_STRATEGY=truncate_middle
 POWERLEVEL9K_ICON_PADDING=none
 POWERLEVEL9K_PROMPT_ADD_NEWLINE=false
 EOF
 }
 
 #################################
-# 🔧 一键修复 compaudit（彻底版）
+# 🔥【核心】历史永久化 + 所有历史实时写入
+#################################
+write_history_config() {
+cat << 'EOF'
+###########################################
+# 🔥 永久保存历史（再也不会丢失）
+###########################################
+export HISTFILE="$HOME/.zsh_history"
+export HISTSIZE=500000
+export SAVEHIST=500000
+
+# SSH断开也实时写入
+setopt INC_APPEND_HISTORY
+setopt INC_APPEND_HISTORY_TIME
+
+# 多终端共享历史
+setopt SHARE_HISTORY
+
+# 不要重复
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_SAVE_NO_DUPS
+
+# 保存时间戳
+setopt EXTENDED_HISTORY
+###########################################
+EOF
+}
+
+#################################
+# 🔧 修复 compaudit
 #################################
 fix_compaudit() {
-    echo "🔧 自动修复 compaudit 权限..."
+    echo "🔧 修复 compaudit..."
+    chmod 600 ~/.zsh_history 2>/dev/null || true
     [[ -f ~/.zshrc ]] && chmod 644 ~/.zshrc
     [[ -f ~/.p10k.zsh ]] && chmod 644 ~/.p10k.zsh
     [[ -d ~/.zinit ]] && chmod -R go-w ~/.zinit
-    # 修复其他补全文件
     compaudit | xargs chmod g-w,o-w || true
-    echo "✅ 权限修复完成！"
+    echo "✔ 权限已修复"
 }
 
 #################################
 # 🚀 安装流程
 #################################
 install_zsh() {
-    echo "🚀 安装 Minimal Neo（单行 + 命令耗时 + autopair + 安全 compinit）..."
     install_packages
-
-    # 安装 zinit
-    if [[ ! -d ~/.zinit ]]; then
-        mkdir -p ~/.zinit
-        git clone https://github.com/zdharma-continuum/zinit.git ~/.zinit/bin
-    fi
 
     [[ -f ~/.zshrc ]] && mv ~/.zshrc ~/.zshrc.bak
 
-    # 写入 ~/.zshrc
-    cat > ~/.zshrc <<'EOF'
-export ZSH_DISABLE_COMPFIX=true
-export TERM=xterm-256color
+    mkdir -p ~/.zinit
+    git clone https://github.com/zdharma-continuum/zinit.git ~/.zinit/bin
 
+cat > ~/.zshrc <<'EOF'
+# ========== 🔥历史永久化配置（放最前面） ==========
+EOF
+
+write_history_config >> ~/.zshrc
+
+cat >> ~/.zshrc <<'EOF'
+
+# ========== Zinit ==========
 source ~/.zinit/bin/zinit.zsh
 
-# powerlevel10k
+# 主题
 zinit depth"1" light-mode for romkatv/powerlevel10k
 
+# p10k 配置
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # 插件
@@ -134,37 +144,28 @@ zinit light hlissner/zsh-autopair
 zinit light Aloxaf/fzf-tab
 bindkey '^I' fzf-tab-complete
 
-# 别名
-alias ll='eza -lah --icons'
-alias la='eza -a --icons'
-alias cat='bat --style=plain'
-
+# 常用
 setopt autocd
-setopt correct
-setopt hist_ignore_all_dups
-setopt share_history
+alias ll='eza -lah --icons'
+alias cat='bat --style=plain'
 EOF
 
     write_p10k
     fix_compaudit
 
-    # 设置默认 shell
     command -v chsh >/dev/null && chsh -s "$(command -v zsh)" || true
 
-    echo "🎉 安装完成！权限安全，自动 exec zsh 进入单行 Minimal Neo + 命令耗时 + autopair"
+    echo "🎉 完成！现在进入 zsh ..."
     sleep 1
     exec zsh
 }
 
-#################################
-# 主菜单
-#################################
 while true; do
     menu
     case "$choice" in
         1) install_zsh ;;
         2) uninstall ;;
         3) exit 0 ;;
-        *) echo "❌ 无效输入" ;;
+        *) echo "输入错误" ;;
     esac
 done
