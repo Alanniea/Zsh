@@ -2,14 +2,14 @@
 set -e
 
 #################################
-# 🌟 Zsh Minimal Neo — Single-line + 命令耗时
+# 🌟 Zsh Minimal Neo — Single-line + Command Time + Autopair
 #################################
 
 menu() {
     echo "==============================="
-    echo "   🌟 Zsh Minimal Neo (Single-line, Command Time) 🌟"
+    echo "   🌟 Zsh Minimal Neo (Single-line + Command Time + Autopair) 🌟"
     echo "==============================="
-    echo "1) 安装 Zsh 极简未来风（单行 + 命令耗时，自动 exec zsh）"
+    echo "1) 安装 Zsh 极简未来风（单行 + 命令耗时 + autopair，自动 exec zsh）"
     echo "2) 卸载 Zsh 定制"
     echo "3) 退出"
     echo -n "请选择 [1-3]: "
@@ -66,14 +66,14 @@ install_packages() {
 }
 
 #################################
-# 🎨 写 Single-line Minimal Neo + Command Time
+# 🎨 写 Single-line Minimal Neo + Command Time + Autopair
 #################################
 write_p10k() {
-    echo "📝 写入 Single-line Minimal Neo ~/.p10k.zsh (Command Time)"
+    echo "📝 写入 Single-line Minimal Neo ~/.p10k.zsh (Command Time + Autopair)"
 
 cat > ~/.p10k.zsh <<'EOF'
 # ===============================
-# Minimal Neo — Single-line + 命令耗时
+# Minimal Neo — Single-line + 命令耗时 + autopair
 # ===============================
 
 # instant prompt
@@ -82,21 +82,19 @@ source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 
 # 单行布局
 POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs)
-# 右侧显示命令耗时
 POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(command_execution_time)
 
 POWERLEVEL9K_PROMPT_ON_NEWLINE=false
 POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
 
-# 去掉多行前缀
 POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX=""
 POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX=""
 
-# 目录显示：尽量短
+# 目录显示
 POWERLEVEL9K_SHORTEN_DIR_LENGTH=1
 POWERLEVEL9K_SHORTEN_STRATEGY="truncate_middle"
 
-# Git 显示（极简）
+# Git 显示
 POWERLEVEL9K_VCS_GIT_ICON=' '
 POWERLEVEL9K_VCS_SHOW_CHANGED_IN_PAREN=false
 POWERLEVEL9K_VCS_DISABLE_GITSTATUS_FORMATTING=true
@@ -105,22 +103,22 @@ POWERLEVEL9K_VCS_DISABLE_GITSTATUS_FORMATTING=true
 POWERLEVEL9K_STATUS_OK=false
 POWERLEVEL9K_STATUS_ERROR=true
 
-# 命令执行耗时阈值（仅显示耗时 > 0.5s）
+# 命令执行耗时阈值
 POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=0.5
 POWERLEVEL9K_COMMAND_EXECUTION_TIME_PRECISION=2
 POWERLEVEL9K_COMMAND_EXECUTION_TIME_BACKGROUND=false
 
-# 极简间距与符号
+# 极简间距
 POWERLEVEL9K_ICON_PADDING=none
 POWERLEVEL9K_PROMPT_ADD_NEWLINE=false
 EOF
 }
 
 #################################
-# 🚀 安装主流程（自动 exec zsh）
+# 🚀 安装主流程
 #################################
 install_zsh() {
-    echo "🚀 安装 Minimal Neo（单行 + 命令耗时）..."
+    echo "🚀 安装 Minimal Neo（单行 + 命令耗时 + autopair）..."
 
     install_packages
 
@@ -151,8 +149,7 @@ zinit depth"1" light-mode for romkatv/powerlevel10k
 zinit light zsh-users/zsh-autosuggestions
 zinit light zdharma-continuum/fast-syntax-highlighting
 zinit light zsh-users/zsh-history-substring-search
-
-# fzf-tab
+zinit light hlissner/zsh-autopair   # 自动括号配对
 zinit light Aloxaf/fzf-tab
 bindkey '^I' fzf-tab-complete
 
@@ -171,7 +168,7 @@ EOF
 
     command -v chsh >/dev/null && chsh -s "$(command -v zsh)" || true
 
-    echo "🎉 安装完成！即将自动 exec zsh，进入单行 Minimal Neo + 命令耗时环境。"
+    echo "🎉 安装完成！即将自动 exec zsh，进入单行 Minimal Neo + 命令耗时 + autopair 环境。"
     sleep 1
 
     exec zsh
