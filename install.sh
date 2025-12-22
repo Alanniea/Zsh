@@ -1,171 +1,137 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+# =================================================================
+# 脚本名称: install_zsh_zinit.sh
+# 描述: 自动安装 Zsh, Zinit, P10k 及常用插件
+# 包含: autosuggestions, syntax-highlighting, completions, history-search
+# =================================================================
+
 set -e
 
-menu() {
-    echo "==============================="
-    echo "   🌟 Zsh Minimal Neo（升级不丢历史版）🌟"
-    echo "==============================="
-    echo "1) 安装"
-    echo "2) 卸载"
-    echo "3) 退出"
-    echo -n "选择: "
-    read -r choice
-}
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # 无颜色
 
-#################################
-# 🗑 卸载
-#################################
-uninstall() {
-    echo "🗑 删除定制..."
-    rm -rf ~/.zinit ~/.p10k.zsh
-    [[ -f ~/.zsh_history ]] && chmod 600 ~/.zsh_history
-    [[ -f ~/.zshrc.bak ]] && mv ~/.zshrc.bak ~/.zshrc
-    echo "✔ 卸载完毕"
-    exit 0
-}
+echo -e "${BLUE}开始自动配置 Zsh 环境...${NC}"
 
-#################################
-# 📦 安装依赖
-#################################
-install_packages() {
-    echo "📦 安装依赖..."
-    if command -v apt >/dev/null; then
-        sudo apt update
-        sudo apt install -y zsh git curl fzf wget fonts-powerline bat || true
-        command -v batcat >/dev/null && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
-        sudo apt install -y eza || true
-    elif command -v pacman >/dev/null; then
-        sudo pacman -Sy --noconfirm zsh git curl wget fzf eza bat
-    elif command -v dnf >/dev/null; then
-        sudo dnf install -y zsh git curl wget fzf eza bat
-    elif command -v brew >/dev/null; then
-        brew install zsh git curl fzf eza bat
-    elif command -v pkg >/dev/null; then
-        pkg install -y zsh git curl fzf eza bat
+# 1. 环境检测与基础包安装
+detect_os_and_install_dependencies() {
+    echo -e "${GREEN}[1/5] 检查依赖项...${NC}"
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        if [ -f /etc/debian_version ]; then
+            sudo apt-get update
+            sudo apt-get install -y zsh git curl wget
+        elif [ -f /etc/redhat-release ]; then
+            sudo yum install -y zsh git curl wget
+        fi
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        if ! command -v brew &>/dev/null; then
+            echo -e "${RED}未找到 Homebrew，请先安装 Homebrew。${NC}"
+            exit 1
+        fi
+        brew install zsh git curl wget
     fi
 }
 
-#################################
-# 🎨 写 p10k
-#################################
-write_p10k() {
-cat > ~/.p10k.zsh <<'EOF'
-POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs)
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(command_execution_time)
-POWERLEVEL9K_PROMPT_ON_NEWLINE=false
-POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
-POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=0.3
-POWERLEVEL9K_COMMAND_EXECUTION_TIME_PRECISION=2
-POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX=""
-POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX=""
-POWERLEVEL9K_SHORTEN_DIR_LENGTH=1
-POWERLEVEL9K_SHORTEN_STRATEGY=truncate_middle
-POWERLEVEL9K_ICON_PADDING=none
-POWERLEVEL9K_PROMPT_ADD_NEWLINE=false
-EOF
+# 2. 安装 Zinit
+install_zinit() {
+    echo -e "${GREEN}[2/5] 安装 Zinit 插件管理器...${NC}"
+    if [ ! -d "$HOME/.local/share/zinit" ]; then
+        mkdir -p "$HOME/.local/share/zinit"
+        chmod g-rw,o-rw "$HOME/.local/share/zinit"
+        git clone https://github.com/zdharma-continuum/zinit.git "$HOME/.local/share/zinit/zinit.git"
+    else
+        echo "Zinit 已存在，跳过安装。"
+    fi
 }
 
-#################################
-# 🔥【核心】历史永久化 + 所有历史实时写入
-#################################
-write_history_config() {
-cat << 'EOF'
-###########################################
-# 🔥 永久保存历史（再也不会丢失）
-###########################################
-export HISTFILE="$HOME/.zsh_history"
-export HISTSIZE=500000
-export SAVEHIST=500000
+# 3. 备份并创建 .zshrc
+configure_zshrc() {
+    echo -e "${GREEN}[3/5] 配置 .zshrc 文件...${NC}"
+    if [ -f "$HOME/.zshrc" ]; then
+        mv "$HOME/.zshrc" "$HOME/.zshrc.bak.$(date +%F_%T)"
+        echo "旧的 .zshrc 已备份。"
+    fi
 
-# SSH断开也实时写入
-setopt INC_APPEND_HISTORY
-setopt INC_APPEND_HISTORY_TIME
+    cat << 'EOF' > "$HOME/.zshrc"
+# ==========================================
+# Zinit 基础初始化
+# ==========================================
+if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
+    print -P "%F{33}▓▒░ %F{220}Installing DHARMA Initiative Plugin Manager (zdharma-continuum/zinit)…%f"
+    command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rw,o-rw "$HOME/.local/share/zinit"
+    command git clone https://github.com/zdharma-continuum/zinit.git "$HOME/.local/share/zinit/zinit.git" && \
+        print -P "%F{33}▓▒░ %F{34}Installation successful.%f" || \
+        print -P "%F{160}▓▒░ The clone has failed.%f"
+fi
 
-# 多终端共享历史
-setopt SHARE_HISTORY
+source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
+autoload -Uz _zinit
+(( ${+_libs_functions} )) && _libs_functions+=( _zinit )
 
-# 不要重复
-setopt HIST_IGNORE_DUPS
-setopt HIST_IGNORE_ALL_DUPS
-setopt HIST_SAVE_NO_DUPS
+# ==========================================
+# 加载 Powerlevel10k 主题
+# ==========================================
+zinit ice depth"1" # 浅克隆以加快速度
+zinit light romkatv/powerlevel10k
 
-# 保存时间戳
-setopt EXTENDED_HISTORY
-###########################################
-EOF
-}
+# ==========================================
+# 加载核心插件
+# ==========================================
 
-#################################
-# 🔧 修复 compaudit
-#################################
-fix_compaudit() {
-    echo "🔧 修复 compaudit..."
-    chmod 600 ~/.zsh_history 2>/dev/null || true
-    [[ -f ~/.zshrc ]] && chmod 644 ~/.zshrc
-    [[ -f ~/.p10k.zsh ]] && chmod 644 ~/.p10k.zsh
-    [[ -d ~/.zinit ]] && chmod -R go-w ~/.zinit
-    compaudit | xargs chmod g-w,o-w || true
-    echo "✔ 权限已修复"
-}
+# 1. 补全增强
+zinit light zsh-users/zsh-completions
+autoload -Uz compinit && compinit
 
-#################################
-# 🚀 安装流程
-#################################
-install_zsh() {
-    install_packages
-
-    [[ -f ~/.zshrc ]] && mv ~/.zshrc ~/.zshrc.bak
-
-    mkdir -p ~/.zinit
-    git clone https://github.com/zdharma-continuum/zinit.git ~/.zinit/bin
-
-cat > ~/.zshrc <<'EOF'
-# ========== 🔥历史永久化配置（放最前面） ==========
-EOF
-
-write_history_config >> ~/.zshrc
-
-cat >> ~/.zshrc <<'EOF'
-
-# ========== Zinit ==========
-source ~/.zinit/bin/zinit.zsh
-
-# 主题
-zinit depth"1" light-mode for romkatv/powerlevel10k
-
-# p10k 配置
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
-
-# 插件
-zinit light zsh-users/zsh-autosuggestions
+# 2. 语法高亮 (必须在后面加载)
 zinit light zdharma-continuum/fast-syntax-highlighting
+
+# 3. 自动建议
+zinit light zsh-users/zsh-autosuggestions
+
+# 4. 历史记录子字符串搜索
 zinit light zsh-users/zsh-history-substring-search
-zinit light hlissner/zsh-autopair
-zinit light Aloxaf/fzf-tab
-bindkey '^I' fzf-tab-complete
 
-# 常用
-setopt autocd
-alias ll='eza -lah --icons'
-alias cat='bat --style=plain'
+# ==========================================
+# 插件配置
+# ==========================================
+
+# zsh-history-substring-search 快捷键配置 (上下方向键)
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
+
+# 启用补全系统
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+
+# 加载 p10k 配置文件 (如果存在)
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 EOF
-
-    write_p10k
-    fix_compaudit
-
-    command -v chsh >/dev/null && chsh -s "$(command -v zsh)" || true
-
-    echo "🎉 完成！现在进入 zsh ..."
-    sleep 1
-    exec zsh
 }
 
-while true; do
-    menu
-    case "$choice" in
-        1) install_zsh ;;
-        2) uninstall ;;
-        3) exit 0 ;;
-        *) echo "输入错误" ;;
-    esac
-done
+# 4. 更改默认 Shell
+set_default_shell() {
+    echo -e "${GREEN}[4/5] 设置 Zsh 为默认 Shell...${NC}"
+    if [[ "$SHELL" != *"zsh"* ]]; then
+        chsh -s $(which zsh)
+    fi
+}
+
+# 5. 完成提示
+finish() {
+    echo -e "${BLUE}==================================================${NC}"
+    echo -e "${GREEN}配置完成！${NC}"
+    echo -e "1. 请重新连接终端或执行: ${BLUE}exec zsh${NC}"
+    echo -e "2. 首次进入将启动 ${BLUE}Powerlevel10k${NC} 配置向导。"
+    echo -e "3. 建议使用支持 MesloLGS NF 字体以获得最佳图标效果。"
+    echo -e "${BLUE}==================================================${NC}"
+}
+
+# 执行流程
+detect_os_and_install_dependencies
+install_zinit
+configure_zshrc
+set_default_shell
+finish
+
